@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-alt
+  namespace: monitoring
+spec:
+  replicas: 2  
+  selector:
+    matchLabels:
+      app: prometheus-alt
+  template:
+    metadata:
+      labels:
+        app: prometheus-alt
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.45.0
+        args:
+        - "--config.file=/etc/prometheus/prometheus.yml"
+        - "--storage.tsdb.path=/prometheus"
+        - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+        - "--web.console.templates=/usr/share/prometheus/consoles"
+        - "--storage.tsdb.retention.time=30d"  # Rétention augmentée à 30 jours
+        ports:
+        - containerPort: 9090
+        volumeMounts:
+        - name: config
+          mountPath: /etc/prometheus
+        - name: storage
+          mountPath: /prometheus
+        resources:
+          requests:
+            memory: "1Gi"  # Ressources augmentées
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+      volumes:
+      - name: config
+        configMap:
+          name: prometheus-alt-config
+      - name: storage
+        persistentVolumeClaim:
+          claimName: prometheus-alt-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-alt
+  namespace: monitoring
+spec:
+  selector:
+    app: prometheus-alt
+  ports:
+  - port: 9090
+    targetPort: 9090
+  type: ClusterIP

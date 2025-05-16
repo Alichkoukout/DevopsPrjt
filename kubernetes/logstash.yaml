@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logstash-alt
+  namespace: monitoring
+spec:
+  replicas: 3 
+  selector:
+    matchLabels:
+      app: logstash-alt
+  template:
+    metadata:
+      labels:
+        app: logstash-alt
+    spec:
+      containers:
+      - name: logstash
+        image: docker.elastic.co/logstash/logstash:8.7.0
+        ports:
+        - containerPort: 5044
+          name: beats
+        - containerPort: 9600
+          name: http
+        env:
+        - name: ELASTICSEARCH_HOSTS
+          value: "http://elasticsearch-alt:9200"
+        - name: XPACK_MONITORING_ENABLED
+          value: "true"
+        - name: LS_JAVA_OPTS
+          value: "-Xms1g -Xmx1g"  # Augmentation de la mémoire Java
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: logstash-alt
+  namespace: monitoring
+spec:
+  selector:
+    app: logstash-alt
+  ports:
+  - port: 5044
+    targetPort: 5044
+    name: beats
+  - port: 9600
+    targetPort: 9600
+    name: http
+  type: ClusterIP

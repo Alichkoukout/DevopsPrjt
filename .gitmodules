@@ -1,0 +1,6 @@
+[submodule "frontendPfa"]
+	path = frontendPfa
+	url = https://github.com/Alichkoukout/frontendPfa
+[submodule "backendpfa"]
+	path = backendpfa
+	url = https://github.com/Alichkoukout/backendpfa

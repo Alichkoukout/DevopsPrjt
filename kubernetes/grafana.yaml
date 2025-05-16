@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana-alt
+  namespace: monitoring
+spec:
+  replicas: 2  
+  selector:
+    matchLabels:
+      app: grafana-alt
+  template:
+    metadata:
+      labels:
+        app: grafana-alt
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:9.5.2
+        ports:
+        - containerPort: 3000
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: grafana-alt-secrets
+              key: admin-password
+        - name: GF_INSTALL_PLUGINS
+          value: "grafana-piechart-panel,grafana-worldmap-panel,grafana-clock-panel"
+        - name: GF_AUTH_ANONYMOUS_ENABLED
+          value: "false"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/grafana/provisioning
+        - name: storage
+          mountPath: /var/lib/grafana
+        resources:
+          requests:
+            memory: "512Mi"  # Ressources augmentées
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: config
+        configMap:
+          name: grafana-alt-config
+      - name: storage
+        persistentVolumeClaim:
+          claimName: grafana-alt-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-alt
+  namespace: monitoring
+spec:
+  selector:
+    app: grafana-alt
+  ports:
+  - port: 3000
+    targetPort: 3000
+  type: LoadBalancer
